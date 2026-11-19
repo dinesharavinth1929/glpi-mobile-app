@@ -7,9 +7,9 @@ import '../../../core/models/catalog_item.dart';
 import '../../../core/providers.dart';
 import 'catalog_tile.dart';
 
-/// Point the camera at an asset label: the code is looked up as a serial or
-/// inventory number across the primary asset types. One hit opens straight to
-/// the asset — the whole point of doing this on a phone.
+/// Point the camera at an asset label: supports both GLPI's built-in Asset URL
+/// QR codes (`.../front/computer.form.php?id=1`) and plain serial / asset-tag
+/// barcodes across the primary asset types.
 class CatalogScanScreen extends ConsumerStatefulWidget {
   const CatalogScanScreen({super.key});
 
@@ -31,6 +31,67 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
     super.dispose();
   }
 
+  /// Parses GLPI web URLs such as `http://10.10.0.170/front/computer.form.php?id=1`
+  /// into their domain, GLPI itemtype, and numeric server ID.
+  ({String domain, String itemtype, int id})? _parseGlpiUrl(String raw) {
+    final uri = Uri.tryParse(raw.trim());
+    if (uri == null || !uri.hasScheme) return null;
+    if (uri.scheme != 'http' && uri.scheme != 'https') return null;
+
+    final id = int.tryParse(uri.queryParameters['id'] ?? '');
+    if (id == null || id <= 0) return null;
+
+    final lastSegment = uri.pathSegments.isNotEmpty
+        ? uri.pathSegments.last.toLowerCase()
+        : '';
+    if (!lastSegment.endsWith('.form.php')) return null;
+
+    const assetMap = <String, String>{
+      'computer.form.php': 'Computer',
+      'monitor.form.php': 'Monitor',
+      'networkequipment.form.php': 'NetworkEquipment',
+      'peripheral.form.php': 'Peripheral',
+      'printer.form.php': 'Printer',
+      'phone.form.php': 'Phone',
+      'rack.form.php': 'Rack',
+      'enclosure.form.php': 'Enclosure',
+      'pdu.form.php': 'PDU',
+      'cable.form.php': 'Cable',
+      'certificate.form.php': 'Certificate',
+      'software.form.php': 'Software',
+      'softwarelicense.form.php': 'SoftwareLicense',
+      'cartridgeitem.form.php': 'CartridgeItem',
+      'consumableitem.form.php': 'ConsumableItem',
+      'appliance.form.php': 'Appliance',
+      'cluster.form.php': 'Cluster',
+      'datacenter.form.php': 'Datacenter',
+      'domain.form.php': 'Domain',
+      'database.form.php': 'Database',
+      'databaseinstance.form.php': 'DatabaseInstance',
+    };
+
+    final assetType = assetMap[lastSegment];
+    if (assetType != null) {
+      return (domain: 'Assets', itemtype: assetType, id: id);
+    }
+
+    const managementMap = <String, String>{
+      'document.form.php': 'Document',
+      'contract.form.php': 'Contract',
+      'supplier.form.php': 'Supplier',
+      'contact.form.php': 'Contact',
+      'line.form.php': 'Line',
+      'budget.form.php': 'Budget',
+    };
+
+    final mgmtType = managementMap[lastSegment];
+    if (mgmtType != null) {
+      return (domain: 'Management', itemtype: mgmtType, id: id);
+    }
+
+    return null;
+  }
+
   Future<void> _lookup(String code) async {
     final trimmed = code.trim();
     if (trimmed.isEmpty || _busy) return;
@@ -39,7 +100,72 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
       _message = null;
       _matches = const [];
     });
+
     final repo = ref.read(catalogRepositoryProvider);
+
+    // 1. Handle GLPI's built-in Asset URL QR code directly.
+    final parsedUrl = _parseGlpiUrl(trimmed);
+    if (parsedUrl != null) {
+      if (repo == null) {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _message = 'Lookup failed — check the connection';
+          });
+        }
+        return;
+      }
+      try {
+        final localId = await repo.localIdFor(
+          parsedUrl.domain,
+          parsedUrl.itemtype,
+          parsedUrl.id,
+        );
+        if (!mounted) return;
+        setState(() => _busy = false);
+        if (localId == null || localId.isEmpty) {
+          setState(
+            () => _message = 'No ${parsedUrl.itemtype} #${parsedUrl.id} found',
+          );
+          announce(context, 'No ${parsedUrl.itemtype} ${parsedUrl.id} found');
+          await _scanner.start();
+          return;
+        }
+        final item = CatalogItem(
+          localId: localId,
+          domain: parsedUrl.domain,
+          itemtype: parsedUrl.itemtype,
+          serverId: parsedUrl.id,
+          name: '',
+          serial: null,
+          otherserial: null,
+          statusName: null,
+          locationName: null,
+          userName: null,
+          groupName: null,
+          manufacturerName: null,
+          modelName: null,
+          typeName: null,
+          entityName: null,
+          expiryDate: null,
+          fields: const {},
+          pending: false,
+        );
+        Navigator.of(context).pop();
+        await openCatalogItem(context, ref, item);
+        return;
+      } on Exception {
+        if (mounted) {
+          setState(() {
+            _busy = false;
+            _message = 'Lookup failed — check the connection';
+          });
+        }
+        return;
+      }
+    }
+
+    // 2. Otherwise search by serial number or asset tag.
     List<CatalogItem> hits = const [];
     try {
       hits =
@@ -54,8 +180,7 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
       }
       return;
     }
-    // A scanned code is exact: prefer serial/asset-tag equality over the
-    // repository's broader "contains" match so one label opens one asset.
+
     final exact = [
       for (final h in hits)
         if ((h.serial ?? '').toLowerCase() == trimmed.toLowerCase() ||
@@ -78,8 +203,6 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
       return;
     }
     setState(() => _matches = result);
-    // The list appears below the fold; say how many so the next swipe has a
-    // destination.
     announce(context, '${result.length} matching assets');
   }
 
@@ -102,10 +225,8 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
       body: Column(
         children: [
           SizedBox(
-            height: 260,
+            height: 300,
             child: Semantics(
-              // Unlabelled, this is a 260px mystery above the field that
-              // actually works without sight.
               label:
                   'Camera viewfinder. Point it at the asset label, or type '
                   'the code below.',
@@ -114,6 +235,21 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
                 fit: StackFit.expand,
                 children: [
                   MobileScanner(controller: _scanner, onDetect: _onDetect),
+                  IgnorePointer(
+                    child: Center(
+                      child: Container(
+                        width: 200,
+                        height: 200,
+                        decoration: BoxDecoration(
+                          border: Border.all(
+                            color: Colors.white.withValues(alpha: 0.75),
+                            width: 2,
+                          ),
+                          borderRadius: BorderRadius.circular(16),
+                        ),
+                      ),
+                    ),
+                  ),
                   if (_busy)
                     const Center(
                       child: CircularProgressIndicator(

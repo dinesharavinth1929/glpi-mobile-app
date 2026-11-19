@@ -27,6 +27,7 @@ class CatalogItem {
   final String domain; // 'Assets' | 'Management'
   final String itemtype;
   final int serverId;
+  
   final String name;
   final String? serial;
   final String? otherserial;
