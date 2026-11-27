@@ -2,7 +2,7 @@ import 'package:material_ui/material_ui.dart';
 
 import '../theme/glpi_colors.dart';
 
-/// GLPI planning states (`Planning::INFO/TODO/DONE`).
+/// GLPI planning states (Information, To do, and Done).
 class PlanningState {
   static const int information = 0;
   static const int todo = 1;

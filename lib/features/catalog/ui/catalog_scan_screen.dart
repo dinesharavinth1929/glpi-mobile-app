@@ -5,6 +5,7 @@ import 'package:mobile_scanner/mobile_scanner.dart';
 import '../../../core/a11y/a11y.dart';
 import '../../../core/models/catalog_item.dart';
 import '../../../core/providers.dart';
+import 'catalog_tile.dart';
 
 /// Point the camera at an asset label: supports both GLPI's built-in Asset URL
 /// QR codes (`.../front/computer.form.php?id=1`) and plain serial / asset-tag
@@ -28,6 +29,18 @@ class _CatalogScanScreenState extends ConsumerState<CatalogScanScreen> {
     _scanner.dispose();
     _manual.dispose();
     super.dispose();
+  }
+
+  Future<void> openCatalogItem(
+    BuildContext context,
+    WidgetRef ref,
+    CatalogItem item,
+  ) async {
+    if (!context.mounted) return;
+    await Navigator.of(context).pushNamed(
+      '/catalog/detail',
+      arguments: item,
+    );
   }
 
   /// Parses GLPI web URLs such as `http://10.10.0.170/front/computer.form.php?id=1`

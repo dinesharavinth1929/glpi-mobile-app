@@ -1,5 +1,6 @@
 import 'package:cupertino_ui/cupertino_ui.dart';
-import 'package:flutter_localizations/flutter_localizations.dart';
+import 'package:flutter_localizations/flutter_localizations.dart'
+    hide GlobalCupertinoLocalizations, GlobalMaterialLocalizations;
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:material_ui/material_ui.dart';
@@ -20,7 +21,8 @@ class GlpiMobileApp extends ConsumerWidget {
       darkTheme: buildDarkTheme(),
       themeMode: ThemeMode.system,
       routerConfig: router,
-      localizationsDelegates: const [
+      // ignore: prefer_const_literals_to_create_immutables
+      localizationsDelegates: [
         AppLocalizations.delegate,
         GlobalMaterialLocalizations.delegate,
         GlobalWidgetsLocalizations.delegate,

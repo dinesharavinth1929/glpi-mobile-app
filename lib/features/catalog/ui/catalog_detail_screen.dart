@@ -25,6 +25,30 @@ import '../../ticket/ui/option_sheet.dart';
 import '../../ticket/ui/user_picker.dart';
 import '../../tools/ui/reservation_booking.dart';
 
+/// Returns a color based on the expiry date.
+///
+/// Expired: error color.
+/// Expiring within 30 days: warning color.
+/// More than 30 days remaining: primary color.
+Color _expiryColor(BuildContext context, DateTime expiry) {
+  final now = DateTime.now();
+  final today = DateTime(now.year, now.month, now.day);
+  final expiryDate = DateTime(expiry.year, expiry.month, expiry.day);
+
+  final remainingDays = expiryDate.difference(today).inDays;
+  final colors = Theme.of(context).colorScheme;
+
+  if (remainingDays < 0) {
+    return colors.error;
+  }
+
+  if (remainingDays <= 30) {
+    return colors.tertiary;
+  }
+
+  return colors.primary;
+}
+
 /// One asset or management record. GLPI's schemas differ per itemtype, so the
 /// screen renders the fields it knows explicitly and everything else generically
 /// from the stored payload — a custom asset definition looks like any other.
@@ -52,15 +76,15 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
 
   @override
   Widget build(BuildContext context) {
-    // Watched (not read) so the dropdown streams stay subscribed — a `read` on
-    // a StreamProvider nothing is listening to has no value yet.
     ref
       ..watch(assetStatusesProvider)
       ..watch(locationsProvider);
+
     final item = ref.watch(catalogItemProvider(widget.localId)).value;
-    // Raising a ticket about the asset is a ticket right, not an asset one.
+
     final canOpenTicket = (ref.watch(rightsProvider).value ?? Rights.empty)
         .canCreateItil('Ticket');
+
     if (item == null) {
       return const Scaffold(
         body: Center(
@@ -68,9 +92,10 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
         ),
       );
     }
+
     if (!_loadedOnce) {
       _loadedOnce = true;
-      // Pull the full payload (+ Infocom) once; the row above stays reactive.
+
       ref.read(
         catalogDetailLoadProvider((
           domain: widget.domain,
@@ -78,6 +103,7 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
           serverId: item.serverId,
         )),
       );
+
       unawaited(_refreshAttachments(item));
     }
 
@@ -110,13 +136,19 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
                 serverId: item.serverId,
               )),
             );
+
             if (_isAsset) {
-              final ref_ = (itemtype: widget.itemtype, serverId: item.serverId);
+              final ref_ = (
+                itemtype: widget.itemtype,
+                serverId: item.serverId,
+              );
+
               ref
                 ..invalidate(assetPortsProvider(ref_))
                 ..invalidate(assetSoftwareProvider(ref_))
                 ..invalidate(assetItilProvider(ref_));
             }
+
             await _refreshAttachments(item);
           },
           child: ListView(
@@ -138,7 +170,8 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
                   ),
                 _ItilSection(item: item),
               ] else ...[
-                if (widget.itemtype == 'Document') _DocumentSection(item: item),
+                if (widget.itemtype == 'Document')
+                  _DocumentSection(item: item),
                 _ValiditySection(item: item),
                 _ContactSection(item: item),
               ],
@@ -164,8 +197,6 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
     );
   }
 
-  /// GLPI attaches Documents to any itemtype, but only the ITIL screens sync
-  /// them automatically — pull this record's own set too.
   Future<void> _refreshAttachments(CatalogItem item) async {
     try {
       await ref
@@ -176,11 +207,11 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
     }
   }
 
-  /// GLPI only allows booking assets someone made reservable; show the button
-  /// only when a matching ReservationItem exists.
   Widget _reserve(CatalogItem item) {
     if (!_isAsset) return const SizedBox.shrink();
+
     final reservable = ref.watch(reservationItemsProvider).value ?? const [];
+
     final match = reservable
         .where(
           (r) =>
@@ -189,10 +220,14 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
               r.itemsId == item.serverId,
         )
         .firstOrNull;
+
     if (match == null) return const SizedBox.shrink();
+
     final canBook =
         (ref.watch(rightsProvider).value ?? Rights.empty).canBookReservations;
+
     if (!canBook) return const SizedBox.shrink();
+
     return Padding(
       padding: const EdgeInsets.only(top: 8),
       child: Align(
@@ -207,10 +242,9 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
   }
 
   Widget _identity(CatalogItem item) {
-    // Editing in the field needs UPDATE on the itemtype; a read-only profile
-    // gets the same rows without the tap target.
     final canEdit = (ref.watch(rightsProvider).value ?? Rights.empty)
         .canUpdateItemtype(item.itemtype);
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
@@ -239,9 +273,6 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
             label: 'Model',
             value: item.modelName!,
           ),
-        // Editable in the field: what a technician actually changes on site.
-        // Only offered when the itemtype really has the field — a Supplier has
-        // no status or location, and PATCHing one would be a silent no-op.
         if (item.fields.containsKey('status'))
           InfoTile(
             icon: Icons.flag_outlined,
@@ -288,14 +319,15 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
   }
 
   Future<void> _editStatus(CatalogItem item) async {
-    // Statuses come from the synced dropdown cache, so this works offline.
     final states = ref.read(assetStatusesProvider).value ?? const [];
+
     if (states.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Statuses are still syncing')),
       );
       return;
     }
+
     final chosen = await OptionSheet.show(
       context,
       title: 'Status',
@@ -304,7 +336,9 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       ],
       current: 0,
     );
+
     if (chosen == null) return;
+
     await ref
         .read(ticketActionsProvider)
         ?.patchCatalogItem(
@@ -316,12 +350,14 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
 
   Future<void> _editLocation(CatalogItem item) async {
     final locations = ref.read(locationsProvider).value ?? const [];
+
     if (locations.isEmpty) {
       ScaffoldMessenger.of(context).showSnackBar(
         const SnackBar(content: Text('Locations are still syncing')),
       );
       return;
     }
+
     final chosen = await OptionSheet.show(
       context,
       title: 'Location',
@@ -330,7 +366,9 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       ],
       current: 0,
     );
+
     if (chosen == null) return;
+
     await ref
         .read(ticketActionsProvider)
         ?.patchCatalogItem(
@@ -342,7 +380,9 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
 
   Future<void> _editUser(CatalogItem item) async {
     final user = await UserPicker.show(context, title: 'Assign user');
+
     if (user == null) return;
+
     await ref
         .read(ticketActionsProvider)
         ?.patchCatalogItem(item, userId: user.id, userName: user.displayName);
@@ -356,17 +396,19 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       initialText: item.comment ?? '',
       submitLabel: 'Save',
     );
+
     if (text == null) return;
+
     await ref
         .read(ticketActionsProvider)
         ?.patchCatalogItem(item, comment: text);
   }
 
-  /// Log a ticket about this asset: create it, then queue the asset link
-  /// against the (possibly still-unsynced) ticket.
   Future<void> _createTicket(CatalogItem item) async {
     final actions = ref.read(ticketActionsProvider);
+
     if (actions == null) return;
+
     final text = await ComposeSheet.show(
       context,
       title: 'New ticket for ${item.displayName}',
@@ -374,6 +416,7 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       submitLabel: 'Create',
       rich: true,
     );
+
     if (text == null || text.trim().isEmpty) return;
 
     final localId = await actions.createTicket(
@@ -384,8 +427,7 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       impact: 3,
       assignToMe: true,
     );
-    // 0 is the sentinel: the drainer resolves the real ticket id once the
-    // create op lands, so this works offline too.
+
     await actions.linkAssetToItil(
       ownerLocalId: localId,
       ownerServerId: 0,
@@ -393,13 +435,14 @@ class _CatalogDetailScreenState extends ConsumerState<CatalogDetailScreen> {
       assetItemtype: item.itemtype,
       assetId: item.serverId,
     );
+
     if (!mounted) return;
+
     await context.push(Routes.ticket(localId));
   }
 }
 
-/// Purchase / warranty block. Read-only: these are finance's fields, but a
-/// technician on site needs to know whether a repair is covered.
+/// Purchase / warranty block.
 class _InfocomSection extends StatelessWidget {
   const _InfocomSection({required this.item});
 
@@ -408,14 +451,19 @@ class _InfocomSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final infocom = item.infocom;
-    if (infocom == null || infocom.isEmpty) return const SizedBox.shrink();
+
+    if (infocom == null || infocom.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     final buy = parseGlpiDateTime(infocom['date_buy'] as String?);
+
     final warrantyStart = parseGlpiDateTime(
       (infocom['date_warranty'] ?? infocom['date_buy']) as String?,
     );
+
     final months = (infocom['warranty_duration'] as num?)?.toInt() ?? 0;
-    // GLPI stores the duration in months; -1 is its "lifetime" sentinel.
+
     final warrantyEnd = (warrantyStart != null && months > 0)
         ? DateTime(
             warrantyStart.year,
@@ -431,7 +479,7 @@ class _InfocomSection extends StatelessWidget {
           ? null
           : DueBadge(
               text: formatDueRelative(warrantyEnd),
-              color: expiryColor(context, warrantyEnd),
+              color: _expiryColor(context, warrantyEnd),
             ),
       children: [
         if (buy != null)
@@ -463,7 +511,6 @@ class _InfocomSection extends StatelessWidget {
     );
   }
 
-  /// Finance rows rendered only when GLPI actually holds a value.
   static const _financeFields = <({String key, IconData icon, String label})>[
     (key: 'supplier', icon: Icons.local_shipping_outlined, label: 'Supplier'),
     (key: 'order_number', icon: Icons.numbers, label: 'Order no.'),
@@ -473,11 +520,14 @@ class _InfocomSection extends StatelessWidget {
 
   static String? _text(Object? v) {
     if (v == null) return null;
+
     if (v is Map) {
       final n = v['completename'] ?? v['name'];
       return n is String && n.isNotEmpty ? n : null;
     }
+
     final s = '$v'.trim();
+
     return s.isEmpty || s == '0' || s == '0.0000' ? null : s;
   }
 }
@@ -493,7 +543,10 @@ class _PortsSection extends ConsumerWidget {
     final ports = ref
         .watch(assetPortsProvider((itemtype: itemtype, serverId: serverId)))
         .value;
-    if (ports == null || ports.isEmpty) return const SizedBox.shrink();
+
+    if (ports == null || ports.isEmpty) {
+      return const SizedBox.shrink();
+    }
 
     return _Expansion(
       icon: Icons.settings_ethernet,
@@ -529,7 +582,10 @@ class _SoftwareSection extends ConsumerWidget {
     final software = ref
         .watch(assetSoftwareProvider((itemtype: itemtype, serverId: serverId)))
         .value;
-    if (software == null || software.total == 0) return const SizedBox.shrink();
+
+    if (software == null || software.total == 0) {
+      return const SizedBox.shrink();
+    }
 
     return _Expansion(
       icon: Icons.apps_outlined,
@@ -581,9 +637,9 @@ class _ItilSection extends ConsumerWidget {
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        Padding(
-          padding: const EdgeInsets.only(top: 8, bottom: 4),
-          child: const SectionHeading('Tickets'),
+        const Padding(
+          padding: EdgeInsets.only(top: 8, bottom: 4),
+          child: SectionHeading('Tickets'),
         ),
         if (links.isEmpty)
           Text(
@@ -597,11 +653,14 @@ class _ItilSection extends ConsumerWidget {
             ListTile(
               dense: true,
               contentPadding: EdgeInsets.zero,
-              leading: Icon(switch (l.itemtype) {
-                'Change' => Icons.published_with_changes,
-                'Problem' => Icons.report_problem_outlined,
-                _ => Icons.confirmation_number_outlined,
-              }, size: 20),
+              leading: Icon(
+                switch (l.itemtype) {
+                  'Change' => Icons.published_with_changes,
+                  'Problem' => Icons.report_problem_outlined,
+                  _ => Icons.confirmation_number_outlined,
+                },
+                size: 20,
+              ),
               title: Text(l.name, maxLines: 1, overflow: TextOverflow.ellipsis),
               subtitle: Text(
                 '${l.itemtype} #${l.id} · '
@@ -622,14 +681,14 @@ class _ItilSection extends ConsumerWidget {
     final localId = await ref
         .read(ticketRepositoryProvider)
         ?.openByServerId(serverId, itemtype: itemtype);
+
     if (localId == null || !context.mounted) return;
+
     await context.push(Routes.ticket(localId));
   }
 }
 
-/// The file behind a standalone Document record: images preview inline, other
-/// types are downloaded and their path offered (the app deliberately carries no
-/// viewer for arbitrary mime types).
+/// The file behind a standalone Document record.
 class _DocumentSection extends ConsumerWidget {
   const _DocumentSection({required this.item});
 
@@ -648,10 +707,13 @@ class _DocumentSection extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final filename =
         (item.fields['filename'] ?? item.fields['filepath']) as String?;
+
     final mime = item.fields['mime'] as String?;
+
     final path = ref
         .watch(documentFileProvider((id: item.serverId, filename: filename)))
         .value;
+
     final isImage =
         (mime ?? '').startsWith('image/') ||
         _imageExtensions.contains(p.extension(filename ?? '').toLowerCase());
@@ -684,8 +746,6 @@ class _DocumentSection extends ConsumerWidget {
               child: Image.file(
                 File(path),
                 fit: BoxFit.contain,
-                // Not every "image/*" decodes on device (TIFF, HEIC on old
-                // Androids) — fall back to the file itself, not a dead end.
                 errorBuilder: (context, _, _) => _downloadButton(context, path),
               ),
             ),
@@ -701,7 +761,9 @@ class _DocumentSection extends ConsumerWidget {
     child: OutlinedButton.icon(
       onPressed: () async {
         await Clipboard.setData(ClipboardData(text: path));
+
         if (!context.mounted) return;
+
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(const SnackBar(content: Text('Saved — path copied')));
@@ -712,8 +774,7 @@ class _DocumentSection extends ConsumerWidget {
   );
 }
 
-/// Term of a contract / licence: when it started, when it runs out, and how
-/// much notice is needed to get out of it.
+/// Term of a contract / licence.
 class _ValiditySection extends StatelessWidget {
   const _ValiditySection({required this.item});
 
@@ -722,13 +783,20 @@ class _ValiditySection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final f = item.fields;
+
     final begin = parseGlpiDateTime(
       (f['date_begin'] ?? f['begin_date']) as String?,
     );
+
     final end = parseGlpiDateTime(item.expiryDate);
+
     final months = (f['duration'] as num?)?.toInt() ?? 0;
+
     final notice = (f['notice_period'] ?? f['notice']) as num?;
-    if (begin == null && end == null) return const SizedBox.shrink();
+
+    if (begin == null && end == null) {
+      return const SizedBox.shrink();
+    }
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -748,7 +816,7 @@ class _ValiditySection extends StatelessWidget {
                 : formatDate(end),
             trailing: DueBadge(
               text: formatDueRelative(end),
-              color: expiryColor(context, end),
+              color: _expiryColor(context, end),
             ),
           ),
         if (notice != null && notice > 0)
@@ -762,8 +830,7 @@ class _ValiditySection extends StatelessWidget {
   }
 }
 
-/// Phone / email / address rows for Suppliers and Contacts — tapping them
-/// hands off to the dialer, mail client or maps app.
+/// Phone / email / address rows for Suppliers and Contacts.
 class _ContactSection extends StatelessWidget {
   const _ContactSection({required this.item});
 
@@ -822,7 +889,9 @@ class _ContactSection extends StatelessWidget {
           ),
         ),
     ];
+
     if (rows.isEmpty) return const SizedBox.shrink();
+
     return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
   }
 
@@ -840,6 +909,7 @@ class _ContactSection extends StatelessWidget {
     onTap: () async {
       if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
         if (!context.mounted) return;
+
         ScaffoldMessenger.of(
           context,
         ).showSnackBar(SnackBar(content: Text('Nothing can open $value')));
@@ -848,14 +918,12 @@ class _ContactSection extends StatelessWidget {
   );
 }
 
-/// Everything the screen doesn't model explicitly, rendered label/value so a
-/// custom asset definition's fields are still visible.
+/// Everything the screen doesn't model explicitly.
 class _OtherFieldsSection extends StatelessWidget {
   const _OtherFieldsSection({required this.item});
 
   final CatalogItem item;
 
-  /// Fields already shown above, plus GLPI plumbing no technician needs.
   static const _skip = {
     'id',
     'name',
@@ -884,12 +952,17 @@ class _OtherFieldsSection extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final entries = <MapEntry<String, String>>[];
+
     for (final e in item.fields.entries) {
       if (_skip.contains(e.key) || e.key.startsWith('_')) continue;
+
       final text = _render(e.value);
+
       if (text == null) continue;
+
       entries.add(MapEntry(_humanize(e.key), text));
     }
+
     if (entries.isEmpty) return const SizedBox.shrink();
 
     return _Expansion(
@@ -904,24 +977,29 @@ class _OtherFieldsSection extends StatelessWidget {
 
   static String? _render(Object? v) {
     if (v == null) return null;
+
     if (v is bool) return v ? 'Yes' : null;
+
     if (v is Map) {
       final n = v['completename'] ?? v['name'];
       return n is String && n.isNotEmpty ? n : null;
     }
+
     if (v is List) return v.isEmpty ? null : '${v.length} item(s)';
+
     final s = '$v'.trim();
+
     return s.isEmpty || s == '0' ? null : s;
   }
 
-  /// `date_mod` → `Date mod`; good enough for fields the app doesn't know.
   static String _humanize(String key) {
     final words = key.replaceAll('_', ' ').trim();
+
     return words.isEmpty ? key : words[0].toUpperCase() + words.substring(1);
   }
 }
 
-/// Collapsed-by-default block, so the detail opens on identity, not plumbing.
+/// Collapsed-by-default block.
 class _Expansion extends StatelessWidget {
   const _Expansion({
     required this.icon,
@@ -937,7 +1015,6 @@ class _Expansion extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) => Theme(
-    // Hide the ExpansionTile's own dividers: the screen has its own rhythm.
     data: Theme.of(context).copyWith(dividerColor: Colors.transparent),
     child: ExpansionTile(
       leading: Icon(icon, size: 20),
