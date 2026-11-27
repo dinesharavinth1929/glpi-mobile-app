@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/a11y/a11y.dart';
 import '../../../core/a11y/contrast.dart';

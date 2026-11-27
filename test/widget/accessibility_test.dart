@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -13,6 +12,7 @@ import 'package:glpi_mobile/core/widgets/section_heading.dart';
 import 'package:glpi_mobile/core/widgets/status_chip.dart';
 import 'package:glpi_mobile/features/queue/ui/ticket_card.dart';
 import 'package:glpi_mobile/features/ticket/ui/timeline_entry_tile.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The accessibility contract for the surfaces a technician lives in.
 ///

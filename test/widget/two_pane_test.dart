@@ -1,8 +1,8 @@
 import 'dart:ui' show DisplayFeature, DisplayFeatureState, DisplayFeatureType;
 
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/widgets/two_pane.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Wraps [child] in a window of [size], optionally with a foldable hinge.
 Widget _window({

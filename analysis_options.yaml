@@ -8,6 +8,9 @@ analyzer:
     - "**/*.g.dart"
     - "**/*.drift.dart"
     - "lib/l10n/generated/**"
+    - build/**
+    - android/**
+    - ios/**
 
 linter:
   rules:

@@ -9,8 +9,8 @@
 ///   for the ink used by the semantic pills.
 library;
 
-import 'package:flutter/material.dart';
 import 'package:flutter/semantics.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Pads a small control out to the 48dp minimum touch target from the Material
 /// guidelines (and WCAG 2.5.5 / 2.5.8).

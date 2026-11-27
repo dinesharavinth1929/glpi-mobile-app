@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_html/flutter_html.dart';
 import 'package:flutter_html_table/flutter_html_table.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 import '../utils/html_text.dart';

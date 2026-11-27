@@ -53,6 +53,8 @@ dependencies:
   # guess at it.
   flutter_svg: ^2.3.0
 
+  cupertino_ui: any
+  material_ui: any
 dev_dependencies:
   flutter_test:
     sdk: flutter

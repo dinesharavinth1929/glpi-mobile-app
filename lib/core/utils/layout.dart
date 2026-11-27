@@ -1,7 +1,7 @@
 import 'dart:math' as math;
 import 'dart:ui' show DisplayFeatureState;
 
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Material 3 window size classes.
 ///

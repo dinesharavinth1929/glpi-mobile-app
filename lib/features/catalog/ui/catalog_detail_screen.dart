@@ -1,10 +1,10 @@
 import 'dart:async';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:path/path.dart' as p;
 import 'package:url_launcher/url_launcher.dart';
 
@@ -24,7 +24,6 @@ import '../../ticket/ui/compose_sheet.dart';
 import '../../ticket/ui/option_sheet.dart';
 import '../../ticket/ui/user_picker.dart';
 import '../../tools/ui/reservation_booking.dart';
-import 'catalog_tile.dart';
 
 /// One asset or management record. GLPI's schemas differ per itemtype, so the
 /// screen renders the fields it knows explicitly and everything else generically

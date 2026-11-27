@@ -1,13 +1,12 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/providers.dart';
 import '../../../core/widgets/accessible_refresh.dart';
 import '../../../core/widgets/rights_gate.dart';
 import '../../ticket/ui/option_sheet.dart';
-import 'catalog_tile.dart';
 
 /// One itemtype's records. Search and the status filter are server-backed (the
 /// dataset is far too large to filter locally), but the cached rows keep

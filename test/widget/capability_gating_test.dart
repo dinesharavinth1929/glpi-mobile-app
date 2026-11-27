@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/api/dto/signal_dto.dart';
@@ -14,6 +13,7 @@ import 'package:glpi_mobile/features/alerts/ui/alerts_screen.dart';
 import 'package:glpi_mobile/features/shell/primary_nav_drawer.dart';
 import 'package:glpi_mobile/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../support/fake_glpi_api.dart';
 

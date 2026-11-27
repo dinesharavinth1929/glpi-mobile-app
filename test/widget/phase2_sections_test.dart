@@ -1,4 +1,3 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/api/dto/change_dto.dart';
@@ -21,6 +20,7 @@ import 'package:glpi_mobile/features/kedb/ui/kedb_banner_section.dart';
 import 'package:glpi_mobile/features/ticket/ui/composer.dart';
 import 'package:glpi_mobile/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../support/fake_glpi_api.dart';
 

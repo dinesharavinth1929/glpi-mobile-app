@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Replaces Flutter's default error placeholder with something a technician —
 /// or whoever they send the screenshot to — can act on.

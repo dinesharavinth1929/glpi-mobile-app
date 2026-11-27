@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Semantic GLPI colors (ticket status, priority, SLA) as a ThemeExtension so
 /// both light and dark themes carry hand-tuned variants. Deliberately NOT

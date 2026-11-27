@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/a11y/contrast.dart';
 import 'package:glpi_mobile/core/theme/app_theme.dart';
 import 'package:glpi_mobile/core/theme/glpi_colors.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// The semantic colors are picked for recognisability as marks, not as text.
 /// These tests pin the rule that anything rendered *as text* goes through

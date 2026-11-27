@@ -1,9 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/models/catalog_item.dart';
 import '../../../core/providers.dart';
-import 'catalog_tile.dart';
 
 /// Search across a domain's primary itemtypes at once — the technician knows
 /// the serial on the label, not which GLPI itemtype it lives under.

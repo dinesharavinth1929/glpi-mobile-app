@@ -1,8 +1,8 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/features/auth/ui/server_screen.dart';
 import 'package:glpi_mobile/l10n/generated/app_localizations.dart';
+import 'package:material_ui/material_ui.dart';
 
 Widget _wrap(Widget child) => ProviderScope(
   child: MaterialApp(

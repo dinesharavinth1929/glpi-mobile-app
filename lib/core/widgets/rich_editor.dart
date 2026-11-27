@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_quill/flutter_quill.dart';
 import 'package:flutter_quill_delta_from_html/flutter_quill_delta_from_html.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:vsc_quill_delta_to_html/vsc_quill_delta_to_html.dart';
 
 import '../utils/html_text.dart';

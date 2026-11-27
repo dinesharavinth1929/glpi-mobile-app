@@ -1,8 +1,8 @@
 import 'dart:async';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 import '../../../core/a11y/contrast.dart';
 import '../../../core/api/dto/signal_dto.dart';

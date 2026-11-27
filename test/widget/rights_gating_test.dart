@@ -1,7 +1,6 @@
 import 'dart:convert';
 import 'dart:io';
 
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/auth/auth_controller.dart';
@@ -16,6 +15,7 @@ import 'package:glpi_mobile/core/widgets/rights_gate.dart';
 import 'package:glpi_mobile/features/shell/primary_nav_drawer.dart';
 import 'package:glpi_mobile/l10n/generated/app_localizations.dart';
 import 'package:go_router/go_router.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// Keeps the widget tree off SecureStore (a platform channel) in tests.
 class _StubAuth extends AuthController {

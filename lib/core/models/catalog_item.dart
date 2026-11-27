@@ -1,4 +1,4 @@
-import 'package:flutter/material.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A record in the generic Assets / Management browser.
 class CatalogItem {

@@ -1,6 +1,6 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_test/flutter_test.dart';
 import 'package:glpi_mobile/core/utils/layout.dart';
+import 'package:material_ui/material_ui.dart';
 
 /// A phone-shaped window with a status bar, and optionally a keyboard up.
 MediaQueryData _window({double keyboard = 0}) => MediaQueryData(

@@ -1,11 +1,10 @@
-import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:material_ui/material_ui.dart';
 import 'package:mobile_scanner/mobile_scanner.dart';
 
 import '../../../core/a11y/a11y.dart';
 import '../../../core/models/catalog_item.dart';
 import '../../../core/providers.dart';
-import 'catalog_tile.dart';
 
 /// Point the camera at an asset label: supports both GLPI's built-in Asset URL
 /// QR codes (`.../front/computer.form.php?id=1`) and plain serial / asset-tag
